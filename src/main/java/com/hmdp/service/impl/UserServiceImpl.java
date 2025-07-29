@@ -1,10 +1,16 @@
 package com.hmdp.service.impl;
 
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hmdp.dto.Result;
 import com.hmdp.entity.User;
 import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
+import com.hmdp.utils.RegexUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import javax.servlet.http.HttpSession;
 
 /**
  * <p>
@@ -14,7 +20,26 @@ import org.springframework.stereotype.Service;
  * @author 虎哥
  * @since 2021-12-22
  */
+@Slf4j
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
 
+    @Override
+    public Result sendCode(String phone, HttpSession session) {
+        // 1.校驗手機號，這裡的校驗是指是否滿足手機號碼格式
+        // RegexUtils 驗證的是中國手機號格式
+        if (RegexUtils.isPhoneInvalid(phone)) {
+            // 2.如果不符合，返回錯誤訊息
+            return Result.fail("手機號格式不正確");
+        }
+        // 3.如果符合，生成驗證碼
+        String code = RandomUtil.randomNumbers(6);
+        // 4.保存驗證碼到session
+        session.setAttribute("code", code);
+        // 5.發送驗證碼給user
+        // 這邊照理說要接 google mail 等第三方 API，因為不是重點故跳過，只用 log 紀錄
+        // 一般發送驗證碼，在公司都會有個獨立的服務去做，只要調用那個服務即可
+        log.debug("發送驗證碼成功, 驗證碼:{}", code);
+        return Result.ok();
+    }
 }
