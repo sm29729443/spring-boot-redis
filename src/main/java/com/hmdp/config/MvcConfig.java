@@ -13,9 +13,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class MvcConfig implements WebMvcConfigurer {
 
+    @Autowired
+    private LoginInterceptor loginInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new LoginInterceptor())
+        registry.addInterceptor(loginInterceptor)
                 .excludePathPatterns(
                         "/user/code",
                         "/user/login",
