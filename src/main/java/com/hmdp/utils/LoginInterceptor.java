@@ -26,35 +26,14 @@ import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
  */
 @Component
 public class LoginInterceptor implements HandlerInterceptor {
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        //1.從 request header 中獲取 token
-        String token = request.getHeader("authorization");
-        if (token == null) {
+        if(UserHolder.getUser() == null){
             response.setStatus(401);
             return false;
         }
-        //2.根據 token 去 redis 獲取 user
-        Map<Object, Object> userMap = stringRedisTemplate.opsForHash()
-                .entries(LOGIN_USER_KEY + token);
-
-        //3.判斷用戶是否存在
-        if (userMap.isEmpty()) {
-            //4. 不存在，攔截
-            response.setStatus(401);
-            return false;
-        }
-        //5.將查詢到的user hashMap 轉為 userDTO Object
-        UserDTO userDTO = BeanUtil.fillBeanWithMap(userMap, new UserDTO(), false);
-        //6.存在，保存到 ThreadLocal 以便後續使用
-        UserHolder.saveUser(userDTO);
-        //7.刷新 token 有效時間
-        stringRedisTemplate.expire(LOGIN_USER_KEY + token, LOGIN_USER_TTL, TimeUnit.SECONDS);
-        //8.放行
-        return HandlerInterceptor.super.preHandle(request, response, handler);
+        return true;
     }
 
     @Override
