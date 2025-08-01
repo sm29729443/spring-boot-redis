@@ -14,8 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.hmdp.utils.RedisConstants.CACHE_SHOP_KEY;
-import static com.hmdp.utils.RedisConstants.CACHE_SHOP_TTL;
+import static com.hmdp.utils.RedisConstants.*;
 
 /**
  * <p>
@@ -41,11 +40,16 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             Shop shop = JSONUtil.toBean(shopJson, Shop.class);
             return Result.ok(shop);
         }
+        // 因為 (6.) 已經改成解決緩存穿透了，所以這邊要判斷 redis 拿到的是否為 ""
+        if (shopJson != null) {
+            return Result.fail("商鋪不存在");
+        }
         // 4. 未命中，去資料庫查詢
         Shop shop = getById(id);
         // 5. 判斷是否存在
         if (shop == null) {
-            // 6. 不存在，返回404
+            // 6. 不存在，將 null 寫入 redis
+            stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
             return Result.fail("店鋪不存在!");
         }
         // 7. 存在，寫入 redis 並返回數據
